@@ -7,10 +7,23 @@ if (php_sapi_name() !== 'cli') {
 
 require __DIR__ . '/vendor/autoload.php';
 
+use App\Service\EnvService as Env;
 use Minicli\App;
 use Minicli\Exception\CommandNotFoundException;
 
+define("SERVER_URL", "irc.twitch.tv");
+define("BASE_URL", __DIR__ . DIRECTORY_SEPARATOR);
+define("LOG_URL", __DIR__ . DIRECTORY_SEPARATOR . "log" . DIRECTORY_SEPARATOR . "data.log");
+define("ENV_URL", __DIR__ . DIRECTORY_SEPARATOR . '.env');
+
+
+$args['env_path'] = ENV_URL;
+Env::set(...$args);
+
 $app = new App();
+
+$app->setSignature("farming for Twitch.\n./farming twitch");
+$app->runCommand($argv);
 
 try {
     $app->runCommand($argv);
