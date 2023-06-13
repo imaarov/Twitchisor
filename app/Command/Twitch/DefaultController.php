@@ -3,6 +3,7 @@
 
 namespace App\Command\Twitch;
 
+use App\Enum\InternetStatusTypes;
 use App\Service\EnvService as Env;
 use App\Service\TwitchClientService as TwitchClient;
 use Minicli\Command\CommandController;
@@ -15,20 +16,21 @@ class DefaultController extends CommandController
 
         $app = $this->getApp();
 
-        // $user_name = $app->config->user_name;
-        // $user_oauth = $app->config->user_oauth;
-
-        // if (!isset($app->config->user_name) || !isset($app->config->user_oauth)) {
-        //     $this->error("Missing 'user_name' and/or 'user_oauth' config settings.");
-        //     return;
-        // }
-
-
-        $user_name  = ENV::value('USER_NAME');
+        $user_name  = Env::value('USER_NAME');
         $user_oauth = Env::value('USER_OAUTH');
-
+        $this->info("Connecting with: \n username:{$user_name} \n oauth:{$user_oauth}");
         $client = new TwitchClient($user_name, $user_oauth);
-        $client->connect();
+        $res = $client->connect();
+
+        switch ($res) {
+            case InternetStatusTypes::INTERNET_CONNECTION_FAILED:
+                $this->error("Internet Failed Connected");
+                return;
+
+            case InternetStatusTypes::INTERNET_CONNECTION_TIMEOUT:
+                $this->error("Internet Timeout Connected");
+                return;
+        }
 
         if (!$client->isConnected()) {
             $this->error("cant connect to the server.");

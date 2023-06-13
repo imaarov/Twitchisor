@@ -4,30 +4,49 @@
 
 namespace App\Service;
 
+use App\Enum\InternetStatusTypes;
 use App\Service\BaseService;
+use Minicli\Command\CommandController;
 
-class TwitchClientService extends BaseService {
-    public function __construct(
-        protected $user,
-        protected $oauth
-    )
-    {}
-
+class TwitchClientService
+{
     protected $socket;
-    public static $HOST = "irc.chat.twitch.tv";
-    public static $PORT = "6667";
+    protected $nick;
+    protected $oauth;
 
+    static $host = "irc.twitch.tv";
+    static $port = "6667";
 
-    public function connect()
+    public function __construct($nick, $oauth)
     {
+        $this->nick = $nick;
+        $this->oauth = $oauth;
+    }
+
+
+    public function connect(): ?InternetStatusTypes
+    {
+        if(! $this->check_internet_connection()) {
+            return InternetStatusTypes::INTERNET_CONNECTION_FAILED;
+        }
+        if (!extension_loaded('sockets')) {
+            //? Socket Extention of php.ini is NOT enable
+        }else {
+            //? Socket Extention of php.ini is enable
+        }
+
+        // socket_set_option($this->socket, SOL_SOCKET, SO_RCVTIMEO, array('sec' => 1, 'usec' => 0));
+        // socket_set_option($this->socket, SOL_SOCKET, SO_SNDTIMEO, array('sec' => 1, 'usec' => 0));
+
+
         $this->socket = socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
-        if (socket_connect($this->socket, self::$HOST, self::$PORT) === FALSE) {
-            return null;
+        if (socket_connect($this->socket, self::$host, self::$port) === FALSE) {
+            return InternetStatusTypes::INTERNET_CONNECTION_TIMEOUT;
         }
 
         $this->authenticate();
-        $this->setUser();
-        $this->joinChannel($this->user);
+        $this->setNick();
+        $this->joinChannel($this->nick);
     }
 
     public function authenticate()
@@ -35,9 +54,9 @@ class TwitchClientService extends BaseService {
         $this->send(sprintf("PASS %s", $this->oauth));
     }
 
-    public function setUser()
+    public function setNick()
     {
-        $this->send(sprintf("User %s", $this->user));
+        $this->send(sprintf("NICK %s", $this->nick));
     }
 
     public function joinChannel($channel)
@@ -76,5 +95,18 @@ class TwitchClientService extends BaseService {
     public function close()
     {
         socket_close($this->socket);
+    }
+
+    public function check_internet_connection(): bool
+    {
+        $connected = @fsockopen("www.google.com", 80);
+        //website, port  (try 80 or 443)
+        if ($connected) {
+            $is_conn = true; //action when connected
+            fclose($connected);
+        } else {
+            $is_conn = false; //action in connection failure
+        }
+        return $is_conn;
     }
 }
