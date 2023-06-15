@@ -1,7 +1,9 @@
 <?php
+
+declare(strict_types=1);
+
 namespace App\Service;
 
-use Minicli\Command\CommandController;
-
-class BaseService {
+class BaseService
+{
 }

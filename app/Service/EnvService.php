@@ -1,10 +1,14 @@
 <?php
+
+declare(strict_types=1);
+
 namespace App\Service;
 
-class EnvService {
+class EnvService
+{
     private static string $env_path;
 
-    public static function value(string $key): string|bool
+    public static function get(string $key): string|bool
     {
         if(self::checkFile() && isset(self::$env_path)) {
             return self::loadFile()[$key] ?? false;
@@ -14,14 +18,11 @@ class EnvService {
 
     public static function checkFile(): bool
     {
-        if(
+        return (bool)(
             is_file(self::$env_path)     ||
             is_readable(self::$env_path) ||
             is_writable(self::$env_path)
-        ){
-            return true;
-        }
-        return false;
+        );
     }
 
     public static function loadFile(): array
@@ -35,7 +36,7 @@ class EnvService {
         return $env_arr;
     }
 
-    public static function set(...$args)
+    public static function set(...$args): void
     {
         foreach ($args as $key => $value) {
             self::${$key} = $value;

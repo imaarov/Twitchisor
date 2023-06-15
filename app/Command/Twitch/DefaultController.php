@@ -1,4 +1,6 @@
 <?php
+
+declare(strict_types=1);
 #label app/Command/Twitch/DefaultController.php
 
 namespace App\Command\Twitch;
@@ -16,8 +18,8 @@ class DefaultController extends CommandController
 
         $app = $this->getApp();
 
-        $user_name  = Env::value('USER_NAME');
-        $user_oauth = Env::value('USER_OAUTH');
+        $user_name  = Env::get('USER_NAME');
+        $user_oauth = Env::get('USER_OAUTH');
         $this->info("Connecting with: \n username:{$user_name} \n oauth:{$user_oauth}");
         $client = new TwitchClient($user_name, $user_oauth);
         $res = $client->connect();
@@ -32,7 +34,7 @@ class DefaultController extends CommandController
                 return;
         }
 
-        if (!$client->isConnected()) {
+        if ( ! $client->isConnected()) {
             $this->error("cant connect to the server.");
             return;
         }
@@ -41,7 +43,7 @@ class DefaultController extends CommandController
 
         while (true) {
             $content = $client->read(512);
-            $this->out($content . "\n", "dim");
+            $this->out($content."\n", "dim");
             sleep(5);
         }
     }

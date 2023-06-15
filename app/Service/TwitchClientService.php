@@ -1,12 +1,11 @@
 <?php
-#app/Service/TwitchChatClient.php
 
+declare(strict_types=1);
+#app/Service/TwitchChatClient.php
 
 namespace App\Service;
 
 use App\Enum\InternetStatusTypes;
-use App\Service\BaseService;
-use Minicli\Command\CommandController;
 
 class TwitchClientService
 {
@@ -14,8 +13,8 @@ class TwitchClientService
     protected $nick;
     protected $oauth;
 
-    static $host = "irc.twitch.tv";
-    static $port = "6667";
+    public static string $host = "irc.twitch.tv";
+    public static int $port = 6667;
 
     public function __construct($nick, $oauth)
     {
@@ -26,12 +25,12 @@ class TwitchClientService
 
     public function connect(): ?InternetStatusTypes
     {
-        if(! $this->check_internet_connection()) {
+        if( ! $this->check_internet_connection()) {
             return InternetStatusTypes::INTERNET_CONNECTION_FAILED;
         }
-        if (!extension_loaded('sockets')) {
+        if ( ! extension_loaded('sockets')) {
             //? Socket Extention of php.ini is NOT enable
-        }else {
+        } else {
             //? Socket Extention of php.ini is enable
         }
 
@@ -40,7 +39,7 @@ class TwitchClientService
 
 
         $this->socket = socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
-        if (socket_connect($this->socket, self::$host, self::$port) === FALSE) {
+        if (false === socket_connect($this->socket, self::$host, self::$port)) {
             return InternetStatusTypes::INTERNET_CONNECTION_TIMEOUT;
         }
 
@@ -49,17 +48,17 @@ class TwitchClientService
         $this->joinChannel($this->nick);
     }
 
-    public function authenticate()
+    public function authenticate(): void
     {
         $this->send(sprintf("PASS %s", $this->oauth));
     }
 
-    public function setNick()
+    public function setNick(): void
     {
         $this->send(sprintf("NICK %s", $this->nick));
     }
 
-    public function joinChannel($channel)
+    public function joinChannel($channel): void
     {
         $this->send(sprintf("JOIN #%s", $channel));
     }
@@ -71,12 +70,12 @@ class TwitchClientService
 
     public function isConnected()
     {
-        return !is_null($this->socket);
+        return null !== $this->socket;
     }
 
     public function read($size = 256)
     {
-        if (!$this->isConnected()) {
+        if ( ! $this->isConnected()) {
             return null;
         }
 
@@ -85,14 +84,14 @@ class TwitchClientService
 
     public function send($message)
     {
-        if (!$this->isConnected()) {
+        if ( ! $this->isConnected()) {
             return null;
         }
 
-        return socket_write($this->socket, $message . "\n");
+        return socket_write($this->socket, $message."\n");
     }
 
-    public function close()
+    public function close(): void
     {
         socket_close($this->socket);
     }
