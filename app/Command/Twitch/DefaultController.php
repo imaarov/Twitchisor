@@ -5,7 +5,7 @@ declare(strict_types=1);
 
 namespace App\Command\Twitch;
 
-use App\Enum\InternetStatusTypes;
+use App\Enum\ConnectionStatusTypes;
 use App\Service\EnvService as Env;
 use App\Service\TwitchClientService as TwitchClient;
 use Minicli\Command\CommandController;
@@ -20,17 +20,28 @@ class DefaultController extends CommandController
 
         $user_name  = Env::get('USER_NAME');
         $user_oauth = Env::get('USER_OAUTH');
-        $this->info("Connecting with: \n username:{$user_name} \n oauth:{$user_oauth}");
-        $client = new TwitchClient($user_name, $user_oauth);
+        $this->info("Connecting with:\nusername:{$user_name}\noauth:{$user_oauth}");
+        $client = new TwitchClient(
+            host: "irc.chat.twitch.tv",
+            port: 6667,
+            username: $user_name,
+            oauth: $user_oauth
+        );
         $res = $client->connect();
 
         switch ($res) {
-            case InternetStatusTypes::INTERNET_CONNECTION_FAILED:
+            case ConnectionStatusTypes::INTERNET_CONNECTION_FAILED:
                 $this->error("Internet Failed Connected");
                 return;
 
-            case InternetStatusTypes::INTERNET_CONNECTION_TIMEOUT:
+            case ConnectionStatusTypes::INTERNET_CONNECTION_TIMEOUT:
                 $this->error("Internet Timeout Connected");
+                return;
+            case ConnectionStatusTypes::SOCKET_EXTENSION_NOT_LOADED:
+                $this->error("Socket Extension is not loaded in php.ini");
+                return;
+            case ConnectionStatusTypes::SOCKET_CONNECTION_FAILED:
+                $this->error( socket_strerror($client->getLastError()));
                 return;
         }
 

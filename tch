@@ -4,6 +4,7 @@
 if (php_sapi_name() !== 'cli') {
     exit;
 }
+ini_set('display_errors', 'on');
 
 require __DIR__ . '/vendor/autoload.php';
 

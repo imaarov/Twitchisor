@@ -1,105 +1,79 @@
 <?php
 
-declare(strict_types=1);
-#app/Service/TwitchChatClient.php
-
 namespace App\Service;
 
-use App\Enum\InternetStatusTypes;
+use App\Enum\ConnectionStatusTypes;
+use Minicli\Output\OutputHandler;
 
-class TwitchClientService
-{
-    protected $socket;
-    protected $nick;
-    protected $oauth;
+class TwitchClientService{
 
-    public static string $host = "irc.twitch.tv";
-    public static int $port = 6667;
+    private $socket;
+    private $op;
 
-    public function __construct($nick, $oauth)
-    {
-        $this->nick = $nick;
-        $this->oauth = $oauth;
+    public function __construct(
+        private string $host,
+        private int $port,
+        private string $username,
+        private string $oauth,
+    ){
+        $this->op = new OutputHandler();
     }
 
-
-    public function connect(): ?InternetStatusTypes
+    public function connect(): ?ConnectionStatusTypes
     {
-        if( ! $this->check_internet_connection()) {
-            return InternetStatusTypes::INTERNET_CONNECTION_FAILED;
+        //? Checking for connecting
+        if(!$this->check_internet_connection()) {
+            return ConnectionStatusTypes::INTERNET_CONNECTION_FAILED;
         }
-        if ( ! extension_loaded('sockets')) {
-            //? Socket Extention of php.ini is NOT enable
-        } else {
-            //? Socket Extention of php.ini is enable
+        if(!extension_loaded('sockets')) {
+            return ConnectionStatusTypes::SOCKET_EXTENSION_NOT_LOADED;
         }
 
-        // socket_set_option($this->socket, SOL_SOCKET, SO_RCVTIMEO, array('sec' => 1, 'usec' => 0));
-        // socket_set_option($this->socket, SOL_SOCKET, SO_SNDTIMEO, array('sec' => 1, 'usec' => 0));
-
-
+        $this->op->info("Start to Connecting ...");
         $this->socket = socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
-        if (false === socket_connect($this->socket, self::$host, self::$port)) {
-            return InternetStatusTypes::INTERNET_CONNECTION_TIMEOUT;
+        if(! socket_connect($this->socket, $this->host, $this->port)) {
+            return ConnectionStatusTypes::SOCKET_CONNECTION_FAILED;
         }
-
-        $this->authenticate();
-        $this->setNick();
-        $this->joinChannel($this->nick);
+        $this->op->info("Connected");
+        $this->connectViaOauth();
     }
 
-    public function authenticate(): void
+    public function connectViaOauth(): void
     {
         $this->send(sprintf("PASS %s", $this->oauth));
+        $this->send(sprintf("NICK %s", $this->username));
     }
 
-    public function setNick(): void
-    {
-        $this->send(sprintf("NICK %s", $this->nick));
-    }
-
-    public function joinChannel($channel): void
+    public function joinChannel(string $channel)
     {
         $this->send(sprintf("JOIN #%s", $channel));
     }
 
-    public function getLastError()
+
+
+    public function isConnected(): bool
     {
-        return socket_last_error($this->socket);
+        return $this->socket ? true : false;
     }
 
-    public function isConnected()
+    public function send(string $msg)
     {
-        return null !== $this->socket;
-    }
-
-    public function read($size = 256)
-    {
-        if ( ! $this->isConnected()) {
-            return null;
+        if ($this->isConnected()) {
+            return socket_write($this->socket, $msg . "\n");
         }
-
-        return socket_read($this->socket, $size);
     }
 
-    public function send($message)
+    public function read(int $size = 256)
     {
-        if ( ! $this->isConnected()) {
-            return null;
+        if ($this->isConnected()) {
+            return socket_read($this->socket, $size);
         }
-
-        return socket_write($this->socket, $message."\n");
     }
 
-    public function close(): void
-    {
-        socket_close($this->socket);
-    }
 
     public function check_internet_connection(): bool
     {
         $connected = @fsockopen("www.google.com", 80);
-        //website, port  (try 80 or 443)
         if ($connected) {
             $is_conn = true; //action when connected
             fclose($connected);
@@ -107,5 +81,10 @@ class TwitchClientService
             $is_conn = false; //action in connection failure
         }
         return $is_conn;
+    }
+
+    public function getLastError()
+    {
+        return socket_last_error($this->socket);
     }
 }
