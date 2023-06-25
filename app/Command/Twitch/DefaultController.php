@@ -41,7 +41,7 @@ class DefaultController extends CommandController
                 $this->error("Socket Extension is not loaded in php.ini");
                 return;
             case ConnectionStatusTypes::SOCKET_CONNECTION_FAILED:
-                $this->error( socket_strerror($client->getLastError()));
+                $this->error(socket_strerror($client->getLastError()));
                 return;
         }
 

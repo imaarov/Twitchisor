@@ -1,12 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Service;
 
 use App\Enum\ConnectionStatusTypes;
 use Minicli\Output\OutputHandler;
 
-class TwitchClientService{
-
+class TwitchClientService
+{
     private $socket;
     private $op;
 
@@ -15,23 +17,23 @@ class TwitchClientService{
         private int $port,
         private string $username,
         private string $oauth,
-    ){
+    ) {
         $this->op = new OutputHandler();
     }
 
     public function connect(): ?ConnectionStatusTypes
     {
         //? Checking for connecting
-        if(!$this->check_internet_connection()) {
+        if( ! $this->check_internet_connection()) {
             return ConnectionStatusTypes::INTERNET_CONNECTION_FAILED;
         }
-        if(!extension_loaded('sockets')) {
+        if( ! extension_loaded('sockets')) {
             return ConnectionStatusTypes::SOCKET_EXTENSION_NOT_LOADED;
         }
 
         $this->op->info("Start to Connecting ...");
         $this->socket = socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
-        if(! socket_connect($this->socket, $this->host, $this->port)) {
+        if( ! socket_connect($this->socket, $this->host, $this->port)) {
             return ConnectionStatusTypes::SOCKET_CONNECTION_FAILED;
         }
         $this->op->info("Connected");
@@ -44,7 +46,7 @@ class TwitchClientService{
         $this->send(sprintf("NICK %s", $this->username));
     }
 
-    public function joinChannel(string $channel)
+    public function joinChannel(string $channel): void
     {
         $this->send(sprintf("JOIN #%s", $channel));
     }
@@ -59,7 +61,7 @@ class TwitchClientService{
     public function send(string $msg)
     {
         if ($this->isConnected()) {
-            return socket_write($this->socket, $msg . "\n");
+            return socket_write($this->socket, $msg."\n");
         }
     }
 
